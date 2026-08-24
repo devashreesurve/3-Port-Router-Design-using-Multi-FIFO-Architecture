@@ -13,7 +13,6 @@ module tb;
     wire valid_out;
     reg ready_in;
 
-    // ================= DUT =================
     router_rr dut (
         .clk(clk),
         .rst(rst),
@@ -25,22 +24,17 @@ module tb;
         .ready_in(ready_in)
     );
 
-    // ================= CLOCK =================
     initial clk = 0;
     always #5 clk = ~clk;
 
-    // ================= SCOREBOARD =================
     reg [7:0] q0[0:199], q1[0:199], q2[0:199];
     integer t0[0:199], t1[0:199], t2[0:199];
 
     integer w0, w1, w2;
     integer r0, r1, r2;
 
-    // MUST be declared here (Verilog rule)
     integer latency;
     reg [1:0] dest;
-
-    // ================= MONITOR =================
     always @(posedge clk) begin
         if (valid_out && ready_in) begin
             dest = data_out[7:6];
@@ -76,7 +70,6 @@ module tb;
         end
     end
 
-    // ================= DRIVER =================
     task send_packet;
         input [1:0] dest_in;
         input [5:0] payload;
@@ -107,7 +100,6 @@ module tb;
         end
     endtask
 
-    // ================= TEST SEQUENCE =================
     initial begin
         rst = 1;
         valid_in = 0;
@@ -119,24 +111,19 @@ module tb;
 
         #20 rst = 0;
 
-        // -------- BASIC --------
         send_packet(0,10);
         send_packet(1,20);
         send_packet(2,30);
 
-        // -------- RANDOM --------
         repeat (20)
             send_packet($random % 3, $random % 64);
 
-        // -------- BURST --------
         repeat (10)
             send_packet(1, $random % 64);
 
-        // -------- SAME DEST --------
         repeat (10)
             send_packet(0, $random % 64);
 
-        // -------- ROUND ROBIN --------
         send_packet(0,1);
         send_packet(1,2);
         send_packet(2,3);
@@ -144,13 +131,11 @@ module tb;
         send_packet(1,5);
         send_packet(2,6);
 
-        // -------- BACKPRESSURE --------
         ready_in = 0;
         repeat (5)
             send_packet(2, $random % 64);
         #50 ready_in = 1;
 
-        // -------- STRESS --------
         repeat (50) begin
             ready_in = $random % 2;
             send_packet($random % 3, $random % 64);
