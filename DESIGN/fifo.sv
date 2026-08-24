@@ -1,8 +1,4 @@
 `timescale 1ns/1ps
-
-// ==========================================================
-// SIMPLE SYNCHRONOUS FIFO
-// ==========================================================
 module fifo #(
     parameter DATA_WIDTH = 8,
     parameter DEPTH = 8
@@ -18,7 +14,7 @@ module fifo #(
 );
 
     reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
-    reg [2:0] wr_ptr, rd_ptr;   // DEPTH=8 → 3 bits
+    reg [2:0] wr_ptr, rd_ptr;   
     reg [3:0] count;
 
     always @(posedge clk or posedge rst) begin
@@ -28,14 +24,11 @@ module fifo #(
             count  <= 0;
             dout   <= 0;
         end else begin
-            // WRITE
             if (wr_en && !full) begin
                 mem[wr_ptr] <= din;
                 wr_ptr <= wr_ptr + 1;
                 count  <= count + 1;
             end
-
-            // READ
             if (rd_en && !empty) begin
                 dout <= mem[rd_ptr];
                 rd_ptr <= rd_ptr + 1;
@@ -49,10 +42,6 @@ module fifo #(
 
 endmodule
 
-
-// ==========================================================
-// 3-PORT ROUTER WITH ROUND ROBIN + REGISTERED OUTPUT
-// ==========================================================
 module router_rr #(
     parameter DATA_WIDTH = 8
 )(
@@ -67,8 +56,6 @@ module router_rr #(
     output reg  valid_out,
     input  wire ready_in
 );
-
-    // Destination (top 2 bits)
     wire [1:0] dest;
     assign dest = data_in[7:6];
 
@@ -81,14 +68,12 @@ module router_rr #(
 
     wire [DATA_WIDTH-1:0] fifo_out0, fifo_out1, fifo_out2;
 
-    // Round robin pointer
     reg [1:0] last_grant, next_grant;
 
     // Internal mux signals
     reg [DATA_WIDTH-1:0] data_out_next;
     reg valid_out_next;
 
-    // ================= FIFO INSTANCES =================
     fifo #(DATA_WIDTH,8) f0 (
         .clk(clk), .rst(rst),
         .wr_en(wr_en0), .rd_en(rd_en0),
@@ -110,7 +95,6 @@ module router_rr #(
         .full(full2), .empty(empty2)
     );
 
-    // ================= WRITE LOGIC =================
     always @(*) begin
         wr_en0 = 0; wr_en1 = 0; wr_en2 = 0;
 
@@ -126,7 +110,6 @@ module router_rr #(
         (dest == 1 && !full1) ||
         (dest == 2 && !full2);
 
-    // ================= ROUND ROBIN =================
     always @(*) begin
         // default
         data_out_next = 0;
@@ -201,7 +184,6 @@ module router_rr #(
         end
     end
 
-    // ================= OUTPUT REGISTER =================
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             data_out  <= 0;
